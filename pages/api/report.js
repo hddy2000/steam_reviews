@@ -2,11 +2,19 @@ import { getDb } from '../../lib/mongodb';
 import { generateSentimentReport } from '../../lib/summarizer';
 
 export default async function handler(req, res) {
-  const { appid, refresh = 'false' } = req.query;
+  const { appid, refresh = 'false', debug = 'false' } = req.query;
   
   if (!appid) {
     return res.status(400).json({ error: 'Missing appid' });
   }
+  
+  // 鏀堕泦璋冭瘯淇℃伅
+  const debugInfo = {
+    keyExists: !!process.env.KIMI_API_KEY,
+    keyPrefix: process.env.KIMI_API_KEY ? process.env.KIMI_API_KEY.substring(0, 10) + '...' : null,
+    refreshParam: refresh,
+    timestamp: new Date().toISOString()
+  };
   
   try {
     const db = await getDb();
@@ -20,14 +28,26 @@ export default async function handler(req, res) {
         updatedAt: { $gte: oneHourAgo }
       });
     
+    debugInfo.cacheFound = !!cachedReport;
+    debugInfo.cacheAge = cachedReport?.updatedAt 
+      ? Math.round((Date.now() - new Date(cachedReport.updatedAt).getTime()) / 1000) + 's ago'
+      : null;
+    
     // 濡傛灉涓嶆槸寮哄埗鍒锋柊锛屼笖缂撳瓨瀛樺湪锛岀洿鎺ヨ繑鍥炵紦瀛?
     if (refresh !== 'true' && cachedReport) {
       console.log(`Returning cached report for appid ${appidNum}`);
-      return res.status(200).json({
+      debugInfo.aiCalled = false;
+      debugInfo.reason = 'Using cache (within 1 hour)';
+      
+      const response = {
         success: true,
         report: cachedReport,
-        cached: true
-      });
+        cached: true,
+        aiCalled: false
+      };
+      
+      if (debug === 'true') response.debug = debugInfo;
+      return res.status(200).json(response);
     }
     
     // 2. 鑾峰彇鏈€鏂拌瘎璁?
@@ -36,6 +56,8 @@ export default async function handler(req, res) {
       .sort({ date: -1 })
       .limit(100)
       .toArray();
+    
+    debugInfo.reviewCount = reviews.length;
     
     // 3. 鑾峰彇鍘嗗彶缁熻锛堢敤浜庡姣旓級
     const previousStats = await db.collection('daily_stats')
@@ -49,7 +71,12 @@ export default async function handler(req, res) {
     
     // 4. 鐢熸垚鑸嗘儏鎶ュ憡锛堟敮鎸丄I鏅鸿兘鍒嗘瀽锛?
     console.log(`Generating new AI report for appid ${appidNum}...`);
+    debugInfo.aiCalled = true;
+    debugInfo.reason = refresh === 'true' ? 'Force refresh requested' : 'Cache expired or not found';
+    
     const report = await generateSentimentReport(reviews, previous);
+    
+    debugInfo.aiGenerated = report.aiGenerated || false;
     
     // 5. 淇濆瓨鎶ュ憡鍒版暟鎹簱
     await db.collection('sentiment_reports').updateOne(
@@ -71,14 +98,25 @@ export default async function handler(req, res) {
       updatedAt: { $lt: thirtyDaysAgo }
     });
     
-    res.status(200).json({
+    const response = {
       success: true,
       report,
-      cached: false
-    });
+      cached: false,
+      aiCalled: true
+    };
+    
+    if (debug === 'true') response.debug = debugInfo;
+    
+    res.status(200).json(response);
     
   } catch (error) {
     console.error('Report API Error:', error);
-    res.status(500).json({ error: error.message });
+    debugInfo.error = error.message;
+    const errorResponse = { 
+      success: false,
+      error: error.message 
+    };
+    if (debug === 'true') errorResponse.debug = debugInfo;
+    res.status(500).json(errorResponse);
   }
 }
