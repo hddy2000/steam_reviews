@@ -15,6 +15,8 @@ export default function Dashboard() {
   useEffect(() => { fetchGames(); }, []);
   useEffect(() => { 
     if (selectedGame) {
+      setReviews(null);  // 清空旧数据
+      setReport(null);   // 清空旧报告
       fetchReviews(selectedGame.appid);
       fetchReport(selectedGame.appid);
     }
