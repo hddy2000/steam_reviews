@@ -29,8 +29,8 @@ export default async function handler(req, res) {
     
     const previous = previousStats[0] || null;
     
-    // 3. 生成舆情报告
-    const report = generateSentimentReport(reviews, previous);
+    // 3. 生成舆情报告（支持AI智能分析）
+    const report = await generateSentimentReport(reviews, previous);
     
     // 4. 保存报告到数据库
     await db.collection('sentiment_reports').updateOne(
