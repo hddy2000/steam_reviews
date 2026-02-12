@@ -7,7 +7,7 @@ export default function Dashboard() {
   const [reviews, setReviews] = useState(null);
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('reviews'); // 'reviews' | 'report'
+  const [activeTab, setActiveTab] = useState('reviews');
   const [newAppId, setNewAppId] = useState('');
   const [newGameName, setNewGameName] = useState('');
   const [message, setMessage] = useState('');
@@ -15,8 +15,8 @@ export default function Dashboard() {
   useEffect(() => { fetchGames(); }, []);
   useEffect(() => { 
     if (selectedGame) {
-      setReviews(null);  // 娓呯┖鏃ф暟鎹?
-      setReport(null);   // 娓呯┖鏃ф姤鍛?
+      setReviews(null);
+      setReport(null);
       fetchReviews(selectedGame.appid);
       fetchReport(selectedGame.appid);
     }
@@ -72,27 +72,27 @@ export default function Dashboard() {
       
       const data = await res.json();
       if (data.success) {
-        setMessage(`鉁?宸叉坊鍔?${newGameName}`);
+        setMessage(`Added ${newGameName}`);
         setNewAppId('');
         setNewGameName('');
         fetchGames();
       } else {
-        setMessage(`鉂?${data.error}`);
+        setMessage(`Error: ${data.error}`);
       }
     } catch (err) {
-      setMessage('鉂?娣诲姞澶辫触');
+      setMessage('Failed to add game');
     }
     
     setTimeout(() => setMessage(''), 3000);
   };
 
   const deleteGame = async (appid) => {
-    if (!confirm('纭畾瑕佸垹闄よ繖涓父鎴忓悧锛?)) return;
+    if (!confirm('Delete this game?')) return;
     
     try {
       const res = await fetch(`/api/games?id=${appid}`, { method: 'DELETE' });
       if (res.ok) {
-        setMessage('鉁?宸插垹闄?);
+        setMessage('Deleted');
         fetchGames();
         if (selectedGame?.appid === appid) {
           setSelectedGame(null);
@@ -101,16 +101,16 @@ export default function Dashboard() {
         }
       }
     } catch (err) {
-      setMessage('鉂?鍒犻櫎澶辫触');
+      setMessage('Delete failed');
     }
     setTimeout(() => setMessage(''), 3000);
   };
 
-  // 鍒锋柊璇勮鍒楄〃锛堜粠Steam鎷夊彇鏂拌瘎璁猴級
+  // Refresh reviews from Steam
   const refreshReviews = async () => {
     if (!selectedGame) return;
     setLoading(true);
-    setMessage('姝ｅ湪鎶撳彇 Steam 璇勮...');
+    setMessage('Fetching Steam reviews...');
     
     try {
       const fetchRes = await fetch(`/api/reviews?appid=${selectedGame.appid}&action=fetch`);
@@ -118,21 +118,21 @@ export default function Dashboard() {
       
       if (fetchData.success) {
         await fetchReviews(selectedGame.appid);
-        setMessage(`鉁?宸叉洿鏂?${fetchData.count} 鏉¤瘎璁篳);
+        setMessage(`Updated ${fetchData.count} reviews`);
       }
     } catch (err) {
-      setMessage('鉂?璇勮鏇存柊澶辫触');
+      setMessage('Failed to update reviews');
     }
     
     setLoading(false);
     setTimeout(() => setMessage(''), 3000);
   };
 
-  // 鍒锋柊鑸嗘儏鎶ュ憡锛堣皟鐢↘imi AI閲嶆柊鐢熸垚锛?
+  // Refresh AI report with Kimi
   const refreshReport = async () => {
     if (!selectedGame) return;
     setLoading(true);
-    setMessage('姝ｅ湪璋冪敤 Kimi AI 鐢熸垚鑸嗘儏鎶ュ憡...');
+    setMessage('Calling Kimi AI...');
     
     try {
       const reportRes = await fetch(`/api/report?appid=${selectedGame.appid}&refresh=true`);
@@ -140,11 +140,11 @@ export default function Dashboard() {
       
       if (reportData.success) {
         setReport(reportData.report);
-        const aiStatus = reportData.aiCalled ? '馃 AI鐢熸垚' : '鈿?缂撳瓨';
-        setMessage(`鉁?鑸嗘儏鎶ュ憡宸叉洿鏂?(${aiStatus})`);
+        const aiStatus = reportData.aiCalled ? 'AI Generated' : 'Cached';
+        setMessage(`Report updated (${aiStatus})`);
       }
     } catch (err) {
-      setMessage('鉂?鎶ュ憡鐢熸垚澶辫触');
+      setMessage('Failed to generate report');
     }
     
     setLoading(false);
@@ -154,21 +154,20 @@ export default function Dashboard() {
   return (
     <div style={styles.container}>
       <Head>
-        <title>Steam 璇勮鑸嗘儏鐩戞帶</title>
+        <title>Steam Review Monitor</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
       <header style={styles.header}>
-        <h1 style={styles.title}>馃幃 Steam 璇勮鑸嗘儏鐩戞帶</h1>
-        <p style={styles.subtitle}>AI 鏅鸿兘鍒嗘瀽 | 鐩戞帶 {games.length}/5 娆炬父鎴?/p>
+        <h1 style={styles.title}>Steam Review Monitor</h1>
+        <p style={styles.subtitle}>AI Analysis | Monitoring {games.length}/5 games</p>
       </header>
 
       {message && <div style={styles.message}>{message}</div>}
 
       <div style={styles.grid}>
-        {/* 宸︿晶锛氭父鎴忓垪琛?*/}
         <div style={styles.sidebar}>
-          <h2 style={styles.sectionTitle}>馃搳 鐩戞帶娓告垙</h2>
+          <h2 style={styles.sectionTitle}>Games</h2>
           
           <div style={styles.gameList}>
             {games.map(game => (
@@ -186,7 +185,7 @@ export default function Dashboard() {
                   style={styles.deleteBtn}
                   onClick={(e) => { e.stopPropagation(); deleteGame(game.appid); }}
                 >
-                  鍒犻櫎
+                  Delete
                 </button>
               </div>
             ))}
@@ -194,25 +193,24 @@ export default function Dashboard() {
 
           {games.length < 5 && (
             <form style={styles.addForm} onSubmit={addGame}>
-              <h3 style={styles.formTitle}>+ 娣诲姞娓告垙</h3>
+              <h3 style={styles.formTitle}>+ Add Game</h3>
               <input
                 style={styles.input}
-                placeholder="AppID (濡? 1991040)"
+                placeholder="AppID (e.g. 1991040)"
                 value={newAppId}
                 onChange={(e) => setNewAppId(e.target.value)}
               />
               <input
                 style={styles.input}
-                placeholder="娓告垙鍚嶇О"
+                placeholder="Game Name"
                 value={newGameName}
                 onChange={(e) => setNewGameName(e.target.value)}
               />
-              <button style={styles.addBtn} type="submit">娣诲姞</button>
+              <button style={styles.addBtn} type="submit">Add</button>
             </form>
           )}
         </div>
 
-        {/* 鍙充晶锛氳鎯?*/}
         <div style={styles.main}>
           {selectedGame ? (
             <>
@@ -220,46 +218,42 @@ export default function Dashboard() {
                 <h2 style={styles.gameTitle}>{selectedGame.name}</h2>
               </div>
 
-              {/* Tab 鍒囨崲 */}
               <div style={styles.tabs}>
                 <button
                   style={{ ...styles.tab, ...(activeTab === 'reviews' ? styles.tabActive : {}) }}
                   onClick={() => setActiveTab('reviews')}
                 >
-                  馃挰 璇勮鍒楄〃
+                  Reviews
                 </button>
                 <button
                   style={{ ...styles.tab, ...(activeTab === 'report' ? styles.tabActive : {}) }}
                   onClick={() => setActiveTab('report')}
                 >
-                  馃搳 鑸嗘儏鎶ュ憡
+                  Report
                 </button>
               </div>
 
               {activeTab === 'reviews' && reviews && (
                 <>
-                  {/* 缁熻鍗＄墖 */}
                   <div style={styles.statsGrid}>
-                    <StatCard title="鎬昏瘎璁? value={reviews.total} />
-                    <StatCard title="濂借瘎鐜? value={`${reviews.positiveRate}%`} 
+                    <StatCard title="Total" value={reviews.total} />
+                    <StatCard title="Positive Rate" value={`${reviews.positiveRate}%`} 
                       color={reviews.positiveRate >= 70 ? '#4caf50' : reviews.positiveRate >= 50 ? '#ff9800' : '#f44336'} />
-                    <StatCard title="濂借瘎" value={reviews.positive} color="#4caf50" />
-                    <StatCard title="宸瘎" value={reviews.negative} color="#f44336" />
+                    <StatCard title="Positive" value={reviews.positive} color="#4caf50" />
+                    <StatCard title="Negative" value={reviews.negative} color="#f44336" />
                   </div>
 
-                  {/* 鍒锋柊璇勮鎸夐挳 */}
                   <div style={{ marginBottom: '15px' }}>
                     <button
                       style={styles.refreshBtn}
                       onClick={refreshReviews}
                       disabled={loading}
                     >
-                      {loading ? '鏇存柊涓?..' : '馃攧 鍒锋柊璇勮'}
+                      {loading ? 'Updating...' : 'Refresh Reviews'}
                     </button>
                   </div>
 
-                  {/* 璇勮鍒楄〃 */}
-                  <h3 style={styles.sectionTitle}>鏈€鏂拌瘎璁?/h3>
+                  <h3 style={styles.sectionTitle}>Latest Reviews</h3>
                   <div style={styles.reviewList}>
                     {reviews.reviews?.slice(0, 20).map((review, idx) => (
                       <div key={review.reviewId || idx} style={{
@@ -268,10 +262,10 @@ export default function Dashboard() {
                       }}>
                         <div style={styles.reviewHeader}>
                           <span style={{ ...styles.reviewLabel, color: review.recommended ? '#4caf50' : '#f44336' }}>
-                            {review.recommended ? '馃憤 鎺ㄨ崘' : '馃憥 涓嶆帹鑽?}
+                            {review.recommended ? 'Recommended' : 'Not Recommended'}
                           </span>
                           <span style={styles.reviewMeta}>
-                            {review.playtime}灏忔椂 | {new Date(review.date).toLocaleDateString()}
+                            {review.playtime}h | {new Date(review.date).toLocaleDateString()}
                           </span>
                         </div>
                         <p style={styles.reviewContent}>
@@ -292,61 +286,56 @@ export default function Dashboard() {
 
               {activeTab === 'report' && report && (
                 <div style={styles.reportContainer}>
-                  {/* AI鐢熸垚鎶ュ憡鎸夐挳 */}
                   <div style={{ marginBottom: '15px', textAlign: 'right' }}>
                     <button
                       style={{...styles.refreshBtn, background: '#9c27b0'}}
                       onClick={refreshReport}
                       disabled={loading}
                     >
-                      {loading ? 'AI鍒嗘瀽涓?..' : '馃 AI鐢熸垚鎶ュ憡'}
+                      {loading ? 'AI Processing...' : 'AI Generate Report'}
                     </button>
                   </div>
 
-                  {/* 鑸嗘儏鎬昏 */}
                   <div style={styles.reportHeader}>
                     <div style={styles.sentimentBadge(report.overall.rating)}>
                       {report.overall.label}
                     </div>
                     <div style={styles.scoreDisplay}>
                       <span style={styles.scoreValue}>{report.overall.score}</span>
-                      <span style={styles.scoreLabel}>鑸嗘儏鍒?/span>
+                      <span style={styles.scoreLabel}>Score</span>
                     </div>
                   </div>
 
-                  {/* 鍏抽敭鎸囨爣 */}
                   <div style={styles.metricsGrid}>
                     <MetricCard 
-                      label="濂借瘎鐜? 
+                      label="Positive Rate" 
                       value={`${report.stats.positiveRate}%`}
                       trend={report.overall.change}
                     />
                     <MetricCard 
-                      label="鑸嗘儏鐑害" 
+                      label="Heat" 
                       value={`${report.overall.heat}/100`}
                     />
                     <MetricCard 
-                      label="骞冲潎娓告垙鏃堕暱" 
-                      value={`${report.stats.avgPlaytime}灏忔椂`}
+                      label="Avg Playtime" 
+                      value={`${report.stats.avgPlaytime}h`}
                     />
                     <MetricCard 
-                      label="璇勮鎬绘暟" 
+                      label="Total Reviews" 
                       value={report.stats.total}
                     />
                   </div>
 
-                  {/* AI 鎬荤粨 */}
                   <div style={styles.reportSection}>
-                    <h3 style={styles.sectionTitle}>馃 AI 鏅鸿兘鎬荤粨</h3>
+                    <h3 style={styles.sectionTitle}>AI Summary</h3>
                     <div style={styles.summaryBox}>
                       <p style={styles.summaryText}>{report.summary}</p>
                     </div>
                   </div>
 
-                  {/* 鐑鍏抽敭璇?*/}
                   {report.keywords?.length > 0 && (
                     <div style={styles.reportSection}>
-                      <h3 style={styles.sectionTitle}>馃敟 鐑鍏抽敭璇?/h3>
+                      <h3 style={styles.sectionTitle}>Keywords</h3>
                       <div style={styles.keywordsCloud}>
                         {report.keywords.slice(0, 10).map((kw, idx) => (
                           <span key={idx} style={{
@@ -361,10 +350,9 @@ export default function Dashboard() {
                     </div>
                   )}
 
-                  {/* 鍏抽敭瑙傜偣 */}
                   {report.keyPoints?.length > 0 && (
                     <div style={styles.reportSection}>
-                      <h3 style={styles.sectionTitle}>馃挕 鍏抽敭瑙傜偣</h3>
+                      <h3 style={styles.sectionTitle}>Key Points</h3>
                       {report.keyPoints.map((point, idx) => (
                         <div key={idx} style={{
                           ...styles.keyPoint,
@@ -372,10 +360,10 @@ export default function Dashboard() {
                         }}>
                           <div style={styles.keyPointHeader}>
                             <span style={{ color: point.type === 'positive' ? '#4caf50' : '#f44336' }}>
-                              {point.type === 'positive' ? '馃憤 濂借瘎' : '馃憥 宸瘎'}
+                              {point.type === 'positive' ? 'Positive' : 'Negative'}
                             </span>
                             <span style={{ color: '#888', fontSize: '0.85rem' }}>
-                              馃憤 {point.helpful} | {point.playtime}灏忔椂
+                              {point.helpful} helpful | {point.playtime}h
                             </span>
                           </div>
                           <p style={styles.keyPointContent}>{point.content}</p>
@@ -384,25 +372,23 @@ export default function Dashboard() {
                     </div>
                   )}
 
-                  {/* 椋庨櫓鎻愮ず */}
                   {report.risks?.length > 0 && (
                     <div style={styles.reportSection}>
-                      <h3 style={styles.sectionTitle}>鈿狅笍 椋庨櫓鎻愮ず</h3>
+                      <h3 style={styles.sectionTitle}>Risks</h3>
                       {report.risks.map((risk, idx) => (
                         <div key={idx} style={{
                           ...styles.riskItem,
                           borderLeft: `4px solid ${risk.level === 'high' ? '#f44336' : '#ff9800'}`
                         }}>
-                          <strong>{risk.level === 'high' ? '馃敶' : '馃煚'} {risk.message}</strong>
+                          <strong>{risk.level === 'high' ? '!' : '?'} {risk.message}</strong>
                         </div>
                       ))}
                     </div>
                   )}
 
-                  {/* 寤鸿 */}
                   {report.suggestions?.length > 0 && (
                     <div style={styles.reportSection}>
-                      <h3 style={styles.sectionTitle}>馃搵 寤鸿</h3>
+                      <h3 style={styles.sectionTitle}>Suggestions</h3>
                       <ul style={styles.suggestionList}>
                         {report.suggestions.map((suggestion, idx) => (
                           <li key={idx} style={styles.suggestionItem}>{suggestion}</li>
@@ -411,22 +397,21 @@ export default function Dashboard() {
                     </div>
                   )}
 
-                  {/* 鏇存柊鏃堕棿 */}
                   <div style={styles.updateTime}>
-                    鎶ュ憡鐢熸垚鏃堕棿: {new Date(report.updatedAt).toLocaleString()}
+                    Generated: {new Date(report.updatedAt).toLocaleString()}
                   </div>
                 </div>
               )}
             </>
           ) : (
-            <div style={styles.emptyState}>璇蜂粠宸︿晶閫夋嫨涓€娆炬父鎴忥紝鎴栨坊鍔犳柊娓告垙</div>
+            <div style={styles.emptyState}>Select a game from the left or add a new game</div>
           )}
         </div>
       </div>
 
       <footer style={styles.footer}>
-        <p>Steam 璇勮鑸嗘儏鐩戞帶 | AI 鏅鸿兘鍒嗘瀽 | 鍏嶈垂鐗堥檺鍒讹細5 娆炬父鎴忥紝淇濈暀鏈€杩?100 鏉¤瘎璁?/p>
-        <p>鐢?Baby 馃惥 寮€鍙?| 鏁版嵁姣忔棩鑷姩鏇存柊</p>
+        <p>Steam Review Monitor | AI Analysis | Free tier: 5 games, keep last 100 reviews</p>
+        <p>Made by Baby</p>
       </footer>
     </div>
   );
@@ -451,7 +436,7 @@ function MetricCard({ label, value, trend }) {
           ...styles.metricTrend, 
           color: trend > 0 ? '#4caf50' : trend < 0 ? '#f44336' : '#888' 
         }}>
-          {trend > 0 ? '鈫? : trend < 0 ? '鈫? : '鈫?} {Math.abs(trend)}%
+          {trend > 0 ? '+' : trend < 0 ? '-' : '='} {Math.abs(trend)}%
         </div>
       )}
     </div>
